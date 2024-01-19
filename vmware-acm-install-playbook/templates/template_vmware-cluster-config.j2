@@ -1,0 +1,198 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: '{{ cluster_name }}'
+spec: {}
+---
+apiVersion: hive.openshift.io/v1
+kind: ClusterDeployment
+metadata:
+  name: '{{ cluster_name }}'
+  namespace: '{{ cluster_name }}'
+  labels:
+    cloud: 'vSphere'
+    vendor: OpenShift
+    cluster.open-cluster-management.io/clusterset: '{{ cluster_set }}'
+spec:
+  baseDomain: {{ base_domain }}
+  clusterName: '{{ cluster_name }}'
+  controlPlaneConfig:
+    servingCertificates: {}
+  installAttemptsLimit: {{ install_attempts_limit }}
+  installed: false
+  platform:
+    vsphere:
+      cluster: OCPnp
+      certificatesSecretRef:
+        name: "{{ cluster_name }}{{ credentials_ref_name }}"
+      credentialsSecretRef:
+        name: "{{ cluster_name }}{{ secret_ref_name }}"
+      vCenter: '{{ vsphere_vcenter }}'
+      datacenter: '{{ vsphere_datacenter }}'
+      defaultDatastore: '{{ vsphere_defaultdatastore }}'
+      network: '{{ vsphere_network }}'
+      folder: '{{ vsphere_folder }}'
+  provisioning:
+    installConfigSecretRef:
+      name: {{ cluster_name }}-install-config
+    sshPrivateKeySecretRef:
+      name: {{ cluster_name }}-ssh-private-key
+    imageSetRef:
+       #quay.io/openshift-release-dev/ocp-release:4.14.7-multi
+      name: {{ cluster_image }}
+  pullSecretRef:
+    name: {{ cluster_name }}-pull-secret
+---
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  labels:
+    cloud: vSphere
+    name: '{{ cluster_name }}'
+    vendor: OpenShift
+    cluster.open-cluster-management.io/clusterset: '{{ cluster_set }}'
+  name: '{{ cluster_name }}'
+spec:
+  hubAcceptsClient: true
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-worker01
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: worker01
+  platform:
+    vsphere:
+      cpus: {{ worker01_cpu }}
+      coresPerSocket: {{ worker01_cores_per_socket }}
+      memoryMB: {{ worker01_ram }}
+      osDisk:
+        diskSizeGB: {{ worker01_disk }}
+  replicas: {{ worker01_replicas }}
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-worker02
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: worker02
+  platform:
+    vsphere:
+      cpus: {{ worker02_cpu }}
+      coresPerSocket: {{ worker02_cores_per_socket }}
+      memoryMB: {{ worker02_ram }}
+      osDisk:
+        diskSizeGB: {{ worker02_disk }}
+  replicas: {{ worker02_replicas }}
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-worker03
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: worker03
+  platform:
+    vsphere:
+      cpus: {{ worker03_cpu }}
+      coresPerSocket: {{ worker03_cores_per_socket }}
+      memoryMB: {{ worker03_ram }}
+      osDisk:
+        diskSizeGB: {{ worker03_disk }}
+  replicas: {{ worker03_replicas }}
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-infra
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: infra
+  platform:
+    vsphere:
+      cpus: {{ infra_cpu }}
+      coresPerSocket: {{ infra_cores_per_socket }}
+      memoryMB: {{ infra_ram }}
+      osDisk:
+        diskSizeGB: {{ infra_disk }}
+  replicas: {{ infra_replicas }}
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-infra-odf
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: infra-odf
+  platform:
+    vsphere:
+      cpus: {{ infra_odf_cpu }}
+      coresPerSocket: {{ infra_odf_cores_per_socket }}
+      memoryMB: {{ infra_odf_ram }}
+      osDisk:
+        diskSizeGB: {{ infra_odf_disk }}
+  replicas: {{ infra_odf_replicas }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ cluster_name }}{{ credentials_ref_name }}"
+  namespace: '{{ cluster_name }}'
+type: Opaque
+data:
+  # Base64 encoding of install-config yaml
+  install-config.yaml: {{ install_config | b64encode }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ cluster_name }}-ssh-private-key
+  namespace: '{{ cluster_name }}'
+stringData:
+  ssh-privatekey: # injected on create
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: "{{ cluster_name }}{{ secret_ref_name }}"
+  namespace: '{{ cluster_name }}'
+stringData:
+  username: {{ vsphere_username }}
+  password: {{ vsphere_password }}
+---
+apiVersion: agent.open-cluster-management.io/v1
+kind: KlusterletAddonConfig
+metadata:
+  name: '{{ cluster_name }}'
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterName: '{{ cluster_name }}'
+  clusterNamespace: '{{ cluster_name }}'
+  clusterLabels:
+    cloud: vSphere
+    vendor: OpenShift
+  applicationManager:
+    enabled: true
+  policyController:
+    enabled: true
+  searchCollector:
+    enabled: true
+  certPolicyController:
+    enabled: true
+  iamPolicyController:
+    enabled: true

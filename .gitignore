@@ -1,0 +1,24 @@
+# Exclude kube config
+
+*kube.config*
+*/files/kube.config
+*/files/binary/oc
+vmware-acm-install-playbook/files/binary/oc
+vmware-acm-install-playbook/files/kube.config
+aws-acm-install-playbook/files/kube.config
+aws-acm-install-playbook/files/binary/oc
+.vscode
+*/files/resources/01_credentials-secret.yaml
+*/files/resources/02_aws-install-config.yaml
+*/files/resources/03_aws-cluster-config.yaml
+aws-acm-install-playbook/files/resources/01_credentials-secret.yaml
+aws-acm-install-playbook/files/resources/02_aws-install-config.yaml
+aws-acm-install-playbook/files/resources/03_aws-cluster-config.yaml
+vmware-acm-install-playbook/files/resources/01_credentials-secret.yaml
+vmware-acm-install-playbook/files/resources/02_aws-install-config.yaml
+vmware-acm-install-playbook/files/resources/03_aws-cluster-config.yaml
+tmp
+/vmware-acm-install-playbook/vars/extra.yaml
+*/files/resources/01_credentials-secret.yaml
+*/files/resources/02_vmware-install-config.yaml
+*/files/resources/03_vmware-cluster-config.yaml

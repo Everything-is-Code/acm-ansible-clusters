@@ -1,0 +1,59 @@
+apiVersion: v1
+metadata:
+  name: '{{ cluster_name }}'
+baseDomain: {{ base_dns_domain }}
+controlPlane:
+  architecture: {{ cluster_architecture }}
+  hyperthreading: Enabled
+  name: master
+  replicas: {{ master_replicas }}
+  platform:
+    vsphere:
+      cpus:  {{ master_cpu }}
+      coresPerSocket:  {{ master_cores_per_socket }}
+      memoryMB:  {{ master_ram }}
+      osDisk:
+        diskSizeGB: {{ master_disk }}
+compute:
+- hyperthreading: Enabled
+  architecture: {{ cluster_architecture }}
+  name: 'worker'
+  replicas: {{ workers_replicas }}
+  platform:
+    vsphere:
+      cpus:  {{ workers_cpu }}
+      coresPerSocket:  {{ workers_cores_per_socket }}
+      memoryMB:  {{ workers_ram }}
+      osDisk:
+        diskSizeGB: {{ workers_disk }}
+networking:
+  networkType: {{ network_type }}
+  clusterNetwork:
+  - cidr: {{ cluster_network_cidr }}
+    hostPrefix: {cluster_network_hostprefix }}
+  machineNetwork:
+  - cidr: {{ machine_network_cidr }}
+  serviceNetwork:
+  - {{ service_network_cidr }}
+platform:
+  vsphere:
+    vCenter: {{ vsphere_vcenter }}
+    username: {{ vsphere_username }}
+    password: {{ vsphere_password }}
+    datacenter: {{ vsphere_datacenter }}
+    defaultDatastore: {{ vsphere_defaultdatastore }}
+    cluster: {{ vsphere_cluster }}
+    apiVIP: {{ vpshere_agivip }}
+    ingressVIP: {{ vsphere_ingressvip }}
+    network: '{{ vsphere_network }}'
+    diskType: '{{ vsphere_disktype }}'
+    folder: '{{ vsphere_folder }}'
+pullSecret: {{ pull_secret }}
+sshKey: |-
+    {{ ssh_aditional_key }}
+additionalTrustBundle: |-
+    {{ aditional_trust_bundle }}
+imageContentSources:
+- mirrors:
+  - {{ image_content_mirror }}
+  source: {{ image_content_release }}

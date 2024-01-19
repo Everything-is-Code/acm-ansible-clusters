@@ -1,0 +1,101 @@
+---
+- name: Install Observability Operator
+  hosts: localhost
+  vars_files:
+    - main.yaml
+    - extra.yaml
+  pre_tasks:
+
+    - name: Check if kube.config file exists
+      ansible.builtin.stat:
+        path: files/config/kube.config
+      register: kubeconfig_exists
+
+    - name: Add Kubeconfig file
+      ansible.builtin.debug:
+        msg: "Add the kube.config in the correct folder"
+      when: not kubeconfig_exists.stat.exists
+
+    - name: Check if OC cli file exists
+      ansible.builtin.stat:
+        path: files/binary/oc
+      register: oc_exists
+
+    - name: Unarchive the OC cli that needs to be downloaded (added in 2.0) can be commentend if you placed the OC cli
+      ansible.builtin.unarchive:
+        src: "{{ oc_cli_url }}"
+        dest: files/binary/
+        remote_src: true
+      when: not oc_exists.stat.exists
+
+    - name: Delete TMP
+      ansible.builtin.file:
+        path: tmp
+        state: absent
+
+  tasks:
+
+    - name: Create TMP folder
+      ansible.builtin.file:
+        path: tmp
+        state: directory
+        mode: "0775"
+
+    - name: Replace template for vmware Cluster Credentials
+      ansible.builtin.template:
+        src: template_vmware-credentials-secret.j2
+        dest: files/resources/01_credentials-secret.yaml
+        mode: preserve
+
+    - name: Replace template for vmware Cluster Install
+      ansible.builtin.template:
+        src: template_vmware-install-config.j2
+        dest: files/resources/02_vmware-install-config.yaml
+        mode: preserve
+      register: install_config
+
+    - name: Load Template as Variable
+      ansible.builtin.set_fact:
+        install_config: "{{ lookup('file', 'files/resources/02_vmware-install-config.yaml') }}"
+
+    - name: Replace template for vmware Cluster Config
+      ansible.builtin.template:
+        src: template_vmware-cluster-config.j2
+        dest: files/resources/03_vmware-cluster-config.yaml
+        mode: preserve
+
+    - name: Install the vmware credential secret
+      redhat.openshift.k8s:
+        kubeconfig: config/kube.config
+        src: files/resources/01_credentials-secret.yaml
+        state: present
+        apply: true
+
+    - name: Install the vmware Cluster Config
+      redhat.openshift.k8s:
+        kubeconfig: config/kube.config
+        src: files/resources/03_vmware-cluster-config.yaml
+        state: present
+        apply: true
+
+    - name: Create Resources folder
+      ansible.builtin.file:
+        path: tmp/resources
+        state: directory
+        mode: "0775"
+
+    - name: Add resources to git folder
+      ansible.builtin.copy:
+        src: files/resources/
+        dest: tmp/resources/
+        mode: "0775"
+
+#    - name: Commit and push changes
+#      ansible.builtin.shell: git add . && git commit -m "Add new files" && git push 
+#      args:
+#        chdir: tmp/
+
+    - name: Delete TMP
+      ansible.builtin.file:
+        path: tmp
+        state: absent

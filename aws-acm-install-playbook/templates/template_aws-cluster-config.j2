@@ -1,0 +1,177 @@
+apiVersion: hive.openshift.io/v1
+kind: ClusterDeployment
+metadata:
+  name: '{{ cluster_name }}'
+  namespace: '{{ cluster_name }}'
+  labels:
+    cloud: 'AWS'
+    region: '{{ aws_region }}'
+    vendor: OpenShift
+    cluster.open-cluster-management.io/clusterset: '{{ cluster_set }}'
+spec:
+  baseDomain: {{ base_dns_domain }}
+  clusterName: '{{ cluster_name }}'
+  controlPlaneConfig:
+    servingCertificates: {}
+  installAttemptsLimit: {{ install_attempts_limit }}
+  installed: false
+  platform:
+    aws:
+      credentialsSecretRef:
+        name: {{ cluster_name }}-aws-creds
+      region: {{ aws_region }}
+  provisioning:
+    installConfigSecretRef:
+      name: {{ cluster_name }}-install-config
+    sshPrivateKeySecretRef:
+      name: {{ cluster_name }}-ssh-private-key
+    imageSetRef:
+       #quay.io/openshift-release-dev/ocp-release:4.14.7-multi
+      name: {{ cluster_image }}
+  pullSecretRef:
+    name: {{ cluster_name }}-pull-secret
+---
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  labels:
+    cloud: Amazon
+    region: {{ aws_region }}
+    name: '{{ cluster_name }}'
+    vendor: OpenShift
+    cluster.open-cluster-management.io/clusterset: '{{ cluster_set }}'
+  name: '{{ cluster_name }}'
+spec:
+  hubAcceptsClient: true
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-worker01
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: worker01
+  platform:
+    aws:
+      rootVolume:
+        iops: 2000
+        size: 100
+        type: io1
+      type: {{ worker01_type }}
+  replicas: {{ worker01_replicas }}
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-worker02
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: worker02
+  platform:
+    aws:
+      rootVolume:
+        iops: 2000
+        size: 100
+        type: io1
+      type: {{ worker02_type }}
+  replicas: {{ worker02_replicas }}
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-worker03
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: worker03
+  platform:
+    aws:
+      rootVolume:
+        iops: 2000
+        size: 100
+        type: io1
+      type: {{ worker03_type }}
+  replicas: {{ worker03_replicas }}
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: {{ cluster_name }}-infra
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterDeploymentRef:
+    name: '{{ cluster_name }}'
+  name: infra
+  platform:
+    aws:
+      rootVolume:
+        iops: 2000
+        size: 100
+        type: io1
+      type: {{ infra_type }}
+  replicas: {{ infra_replicas }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ cluster_name }}-pull-secret
+  namespace: '{{ cluster_name }}'
+stringData:
+  .dockerconfigjson: # injected on create
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ cluster_name }}-install-config
+  namespace: '{{ cluster_name }}'
+type: Opaque
+data:
+  # Base64 encoding of install-config yaml
+  install-config.yaml: {{ install_config | b64encode }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ cluster_name }}-ssh-private-key
+  namespace: '{{ cluster_name }}'
+stringData:
+  ssh-privatekey: # injected on create
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: {{ cluster_name }}-aws-creds
+  namespace: '{{ cluster_name }}'
+stringData:
+  aws_access_key_id: {{ aws_access_key_id }}
+  aws_secret_access_key: # injected on create
+---
+apiVersion: agent.open-cluster-management.io/v1
+kind: KlusterletAddonConfig
+metadata:
+  name: '{{ cluster_name }}'
+  namespace: '{{ cluster_name }}'
+spec:
+  clusterName: '{{ cluster_name }}'
+  clusterNamespace: '{{ cluster_name }}'
+  clusterLabels:
+    cloud: Amazon
+    vendor: OpenShift
+  applicationManager:
+    enabled: true
+  policyController:
+    enabled: true
+  searchCollector:
+    enabled: true
+  certPolicyController:
+    enabled: true
+  iamPolicyController:
+    enabled: true
