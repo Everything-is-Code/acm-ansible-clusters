@@ -1,5 +1,5 @@
 ---
-- name: Install Observability Operator
+- name: Create new cluster Manifest
   hosts: localhost
   vars_files:
     - main.yaml
@@ -37,65 +37,81 @@
 
     - name: Create TMP folder
       ansible.builtin.file:
-        path: tmp
+        path: tmp/resources
         state: directory
         mode: "0775"
 
     - name: Replace template for vmware Cluster Credentials
       ansible.builtin.template:
         src: template_vmware-credentials-secret.j2
-        dest: files/resources/01_credentials-secret.yaml
+        dest: "tmp/resources/{{ credentials_secret_yaml }}"
         mode: preserve
 
     - name: Replace template for vmware Cluster Install
       ansible.builtin.template:
         src: template_vmware-install-config.j2
-        dest: files/resources/02_vmware-install-config.yaml
+        dest: "tmp/resources/{{ install_config_yaml }}"
         mode: preserve
       register: install_config
 
     - name: Load Template as Variable
       ansible.builtin.set_fact:
-        install_config: "{{ lookup('file', 'files/resources/02_vmware-install-config.yaml') }}"
+        install_config: "{{ lookup('file', 'tmp/resources/02_vmware-install-config.yaml') }}"
 
     - name: Replace template for vmware Cluster Config
       ansible.builtin.template:
         src: template_vmware-cluster-config.j2
-        dest: files/resources/03_vmware-cluster-config.yaml
+        dest: "tmp/resources/{{ cluster_config_yaml }}"
         mode: preserve
 
-    - name: Install the vmware credential secret
-      redhat.openshift.k8s:
-        kubeconfig: config/kube.config
-        src: files/resources/01_credentials-secret.yaml
-        state: present
-        apply: true
+    - name: Replace template for kustomization yaml
+      ansible.builtin.template:
+        src: template_kustomization.j2
+        dest: "tmp/resources/kustomization.yaml"
+        mode: preserve
 
-    - name: Install the vmware Cluster Config
-      redhat.openshift.k8s:
-        kubeconfig: config/kube.config
-        src: files/resources/03_vmware-cluster-config.yaml
-        state: present
-        apply: true
+    # - name: Install the vmware credential secret
+    #   redhat.openshift.k8s:
+    #     kubeconfig: config/kube.config
+    #     src: tmp/01_credentials-secret.yaml
+    #     state: present
+    #     apply: true
 
-    - name: Create Resources folder
+    # - name: Install the vmware Cluster Config
+    #   redhat.openshift.k8s:
+    #     kubeconfig: config/kube.config
+    #     src: tmp/03_vmware-cluster-config.yaml
+    #     state: present
+    #     apply: true
+
+    - name: Create git folder
       ansible.builtin.file:
-        path: tmp/resources
+        path: tmp/git
         state: directory
         mode: "0775"
 
-    - name: Add resources to git folder
-      ansible.builtin.copy:
-        src: files/resources/
-        dest: tmp/resources/
+    - name: Clone Repository
+      ansible.builtin.shell: "cd tmp/git/ && git clone {{ git_repository }} && cd ../.."
+
+    - name: Create folder for new files
+      ansible.builtin.file:
+        path: "tmp/git/{{ git_repo_name }}/{{ cluster_name }}"
+        state: directory
         mode: "0775"
 
-#    - name: Commit and push changes
-#      ansible.builtin.shell: git add . && git commit -m "Add new files" && git push 
-#      args:
-#        chdir: tmp/
 
-    - name: Delete TMP
-      ansible.builtin.file:
-        path: tmp
-        state: absent
+    - name: Add resources to git folder
+      ansible.builtin.copy:
+        src: tmp/resources/
+        dest: "tmp/git/{{ git_repo_name }}/{{ cluster_name }}"
+        mode: "0775"
+
+    - name: Add Line to Kustomization yaml
+      ansible.builtin.shell: "kustomize edit add resource /{{ cluster_name }}"
+
+    - name: Git Add Files, commit and push
+      ansible.builtin.shell: "cd tmp/git/{{ git_repo_name }} && git add -f . && git commit -m 'Cluster files' && git push origin main"
+    # - name: Delete TMP
+    #   ansible.builtin.file:
+    #     path: tmp
+    #     state: absent
