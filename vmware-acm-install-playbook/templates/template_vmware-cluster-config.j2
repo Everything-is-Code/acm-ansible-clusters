@@ -149,7 +149,16 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ cluster_name }}{{ credentials_ref_name }}
+  name: {{ cluster_name }}-pull-secret
+  namespace: {{ cluster_name }}
+stringData:
+  .dockerconfigjson: {{ pull_secret }} # injected on create
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ cluster_name }}-install-config
   namespace: {{ cluster_name }}
 type: Opaque
 data:
@@ -162,7 +171,7 @@ metadata:
   name: {{ cluster_name }}-ssh-private-key
   namespace: {{ cluster_name }}
 stringData:
-  ssh-privatekey: # injected on create
+  ssh-privatekey: {{ ssh_private_key }}
 type: Opaque
 ---
 apiVersion: v1
