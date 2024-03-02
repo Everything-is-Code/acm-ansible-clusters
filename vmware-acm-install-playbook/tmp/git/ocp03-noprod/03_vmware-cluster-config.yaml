@@ -1,0 +1,198 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: 'ocp03-noprod'
+spec: {}
+---
+apiVersion: hive.openshift.io/v1
+kind: ClusterDeployment
+metadata:
+  name: 'ocp03-noprod'
+  namespace: 'ocp03-noprod'
+  labels:
+    cloud: 'vSphere'
+    vendor: OpenShift
+    cluster.open-cluster-management.io/clusterset: 'openshift-gitops'
+spec:
+  baseDomain: ocplasegunda-np2.com.ar
+  clusterName: 'ocp03-noprod'
+  controlPlaneConfig:
+    servingCertificates: {}
+  installAttemptsLimit: 1
+  installed: false
+  platform:
+    vsphere:
+      cluster: OCPnp
+      certificatesSecretRef:
+        name: "ocp03-noprod-install-config"
+      credentialsSecretRef:
+        name: "ocp03-noprod-ssh-private-key"
+      vCenter: 'vcenter01.l2it.internal'
+      datacenter: 'DC01'
+      defaultDatastore: 'ds_infra_ocp_np_01_nfs_stgMC01'
+      network: 'dvPortGroup_OCPv46_noprod-100'
+      folder: '/DC01/vm/OCPnp/OCPnoPROD'
+  provisioning:
+    installConfigSecretRef:
+      name: ocp03-noprod-install-config
+    sshPrivateKeySecretRef:
+      name: ocp03-noprod-ssh-private-key
+    imageSetRef:
+       #quay.io/openshift-release-dev/ocp-release:4.14.7-multi
+      name: img4.14.6-multi-appsub
+  pullSecretRef:
+    name: ocp03-noprod-pull-secret
+---
+apiVersion: cluster.open-cluster-management.io/v1
+kind: ManagedCluster
+metadata:
+  labels:
+    cloud: vSphere
+    name: 'ocp03-noprod'
+    vendor: OpenShift
+    cluster.open-cluster-management.io/clusterset: 'openshift-gitops'
+  name: 'ocp03-noprod'
+spec:
+  hubAcceptsClient: true
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: ocp03-noprod-worker01
+  namespace: 'ocp03-noprod'
+spec:
+  clusterDeploymentRef:
+    name: 'ocp03-noprod'
+  name: worker01
+  platform:
+    vsphere:
+      cpus: 8
+      coresPerSocket: 4
+      memoryMB: 32
+      osDisk:
+        diskSizeGB: 120
+  replicas: 3
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: ocp03-noprod-worker02
+  namespace: 'ocp03-noprod'
+spec:
+  clusterDeploymentRef:
+    name: 'ocp03-noprod'
+  name: worker02
+  platform:
+    vsphere:
+      cpus: 8
+      coresPerSocket: 4
+      memoryMB: 32
+      osDisk:
+        diskSizeGB: 120
+  replicas: 3
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: ocp03-noprod-worker03
+  namespace: 'ocp03-noprod'
+spec:
+  clusterDeploymentRef:
+    name: 'ocp03-noprod'
+  name: worker03
+  platform:
+    vsphere:
+      cpus: 8
+      coresPerSocket: 4
+      memoryMB: 32
+      osDisk:
+        diskSizeGB: 120
+  replicas: 3
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: ocp03-noprod-infra
+  namespace: 'ocp03-noprod'
+spec:
+  clusterDeploymentRef:
+    name: 'ocp03-noprod'
+  name: infra
+  platform:
+    vsphere:
+      cpus: 8
+      coresPerSocket: 4
+      memoryMB: 32
+      osDisk:
+        diskSizeGB: 120
+  replicas: 3
+---
+apiVersion: hive.openshift.io/v1
+kind: MachinePool
+metadata:
+  name: ocp03-noprod-infra-odf
+  namespace: 'ocp03-noprod'
+spec:
+  clusterDeploymentRef:
+    name: 'ocp03-noprod'
+  name: infra-odf
+  platform:
+    vsphere:
+      cpus: 16
+      coresPerSocket: 8
+      memoryMB: 32
+      osDisk:
+        diskSizeGB: 200"
+  replicas: 3
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "ocp03-noprod-install-config"
+  namespace: 'ocp03-noprod'
+type: Opaque
+data:
+  # Base64 encoding of install-config yaml
+  install-config.yaml: YXBpVmVyc2lvbjogdjEKbWV0YWRhdGE6CiAgbmFtZTogJ29jcDAzLW5vcHJvZCcKYmFzZURvbWFpbjogCmNvbnRyb2xQbGFuZToKICBhcmNoaXRlY3R1cmU6IGFtZDY0CiAgaHlwZXJ0aHJlYWRpbmc6IEVuYWJsZWQKICBuYW1lOiBtYXN0ZXIKICByZXBsaWNhczogMwogIHBsYXRmb3JtOgogICAgdnNwaGVyZToKICAgICAgY3B1czogIDgKICAgICAgY29yZXNQZXJTb2NrZXQ6ICA0CiAgICAgIG1lbW9yeU1COiAgMzIKICAgICAgb3NEaXNrOgogICAgICAgIGRpc2tTaXplR0I6IDEyMApjb21wdXRlOgotIGh5cGVydGhyZWFkaW5nOiBFbmFibGVkCiAgYXJjaGl0ZWN0dXJlOiBhbWQ2NAogIG5hbWU6ICd3b3JrZXInCiAgcmVwbGljYXM6IDMKICBwbGF0Zm9ybToKICAgIHZzcGhlcmU6CiAgICAgIGNwdXM6ICA4CiAgICAgIGNvcmVzUGVyU29ja2V0OiAgNAogICAgICBtZW1vcnlNQjogIDMyCiAgICAgIG9zRGlzazoKICAgICAgICBkaXNrU2l6ZUdCOiAxMjAKbmV0d29ya2luZzoKICBuZXR3b3JrVHlwZTogT1ZOS3ViZXJuZXRlcwogIGNsdXN0ZXJOZXR3b3JrOgogIC0gY2lkcjogMTAuMTI4LjAuMC8xNAogICAgaG9zdFByZWZpeDogMjMKICBtYWNoaW5lTmV0d29yazoKICAtIGNpZHI6IDE3Mi4xNi4yMDQuMC8zMgogIHNlcnZpY2VOZXR3b3JrOgogIC0gMTcyLjMwLjAuMC8xNgpwbGF0Zm9ybToKICB2c3BoZXJlOgogICAgdkNlbnRlcjogdmNlbnRlcjAxLmwyaXQuaW50ZXJuYWwKICAgIHVzZXJuYW1lOiBvY3Bub3Byb2RAdnNwaGVyZS5sb2NhbAogICAgcGFzc3dvcmQ6IGRlWTI1WXs4Z3h2VgogICAgZGF0YWNlbnRlcjogREMwMQogICAgZGVmYXVsdERhdGFzdG9yZTogZHNfaW5mcmFfb2NwX25wXzAxX25mc19zdGdNQzAxCiAgICBjbHVzdGVyOiBPQ1BucAogICAgYXBpVklQOiAKICAgIGluZ3Jlc3NWSVA6IDE3Mi4xNi4yMDQuMTQKICAgIG5ldHdvcms6ICdkdlBvcnRHcm91cF9PQ1B2NDZfbm9wcm9kLTEwMCcKICAgIGRpc2tUeXBlOiAndGhpbicKICAgIGZvbGRlcjogJy9EQzAxL3ZtL09DUG5wL09DUG5vUFJPRCcKcHVsbFNlY3JldDogeyJhdXRocyI6eyJjbG91ZC5vcGVuc2hpZnQuY29tIjp7ImF1dGgiOiJiM0JsYm5Ob2FXWjBMWEpsYkdWaGMyVXRaR1YySzI5amJWOWhZMk5sYzNOZk0yUTBPVFZoTldabE5UTTNOR1kyWTJFek1XWTBNbVF5TWpkbU5XWXlaams2T1RkVldEUldUMDVKTkVwR1dUQlBPVmhVV0VGUFZERkNOalZIU2t0VFR6WXlPRGRPTWxWUVFraGFNalpETWxCVlJUSk5TbEpUVlZORFRVcElRVkpCTkE9PSIsImVtYWlsIjoiYWd1em1hbkBsYXNlZ3VuZGEuY29tLmFyIn0sInF1YXkuaW8iOnsiYXV0aCI6ImIzQmxibk5vYVdaMExYSmxiR1ZoYzJVdFpHVjJLMjlqYlY5aFkyTmxjM05mTTJRME9UVmhOV1psTlRNM05HWTJZMkV6TVdZME1tUXlNamRtTldZeVpqazZPVGRWV0RSV1QwNUpORXBHV1RCUE9WaFVXRUZQVkRGQ05qVkhTa3RUVHpZeU9EZE9NbFZRUWtoYU1qWkRNbEJWUlRKTlNsSlRWVk5EVFVwSVFWSkJOQT09IiwiZW1haWwiOiJhZ3V6bWFuQGxhc2VndW5kYS5jb20uYXIifSwicmVnaXN0cnkuY29ubmVjdC5yZWRoYXQuY29tIjp7ImF1dGgiOiJmSFZvWXkxd2IyOXNMVGt3TW1Wak5qazJMVEkxTVRVdE5HWTBOeTA0T0RoaUxUazJZbUpqTXpoaVlUSmxOenBsZVVwb1lrZGphVTlwU2xOVmVsVjRUV2xLT1M1bGVVcDZaRmRKYVU5cFNURk9WMDVvVFdwVk1VMHlWVEZaVjFFd1dWUkJNMDlFWkd4UFYxazBUVlJCTWxscVkzZE9hbWMwVG1sS09TNUVTV0ZRVm01bE9UYzVkV3BRUVhGamQyeHFXRnBXYUVsS2NUSmFjMWxoZDB0amJsSlNlVlJVYTNoMU5HZEhUbXQyVlRKUk56SXpjR3BGWlhNeVVGRXpWakI2WTJWbk5ITm1aMmhIYlZwNVZtcGtZMEZKVVVaTWNucGFVa0ZEWW1KUFlVeFBSbWw2ZVVKclYydGZielEyY0RBelgyaFVRWE5oYjBaSldYTmhSbU5FVWtoTVFWUXhObVYwVmxWeFJrNU9jMEV4UWkxT2FVdDBiVlU1Vm1aeGFEbFJaVE5QZUU5MVZteHRiMU0wU1dvMFZuZGxjbVl5YkRFM1UzbExNblpUYVZwallsOUxWRWd5YTBndGFrTkdSVzA1WlRKNlJWaFRlVFV6Y3pKa1ZVOUJVMVkzTm14V1V6bE9XazV5VFdSclgxcEVkSFpMUmxsRU5uSkdORWhNWXkwek5HbE1Samx6Umtkd2RHZFJiakI0U0haV1YzSlZSbXh1UmxaVU0ySlBkM05hVDFsRFZYcHNUVEJ0YzBkV1ZuZEhYelJwUTBWYVVHWXdSMEpST0c1SWVWSjVURXBCVjBOb1FreEpOVUp0ZDBoQk5UbHJWbXRhU1dvM05UZElkRzFzVUdkSFZESmxXREpNUzBKNE1HdzNTVk5uVVRCeGVFNTBaWFUxTFhsc1FqWlJla0pWUzBkaFRGaGZkbmMwYzNkd2JtRnBMVjkwWkZWUmNUSjROVU5GUW1aV1dUUk1ObXBOZUdvelRXVlZkMmh2U0RKSFJqSkdWVXhNVXpaR1JtSk5iRkJwTVRCMlNXTXpaVUpEZDFrMWVYVTNaRFJoWmxodWVUbG5la3BqZWt0TlUzY3hZVE14Y1VWdFduUnlkSHBMZEMxT2RtaE5WRXRKZHpVemFFbHdaMnB1YUVNMWEwVkRjWEpZWnpkQlJHNWZSbE5VY1UxQk1WTXRTVGQ1UXpsRmVtbEhlazAxUjBGZkxVNXhhMVZpTmtRMllXeDFiMHhJZDFSb2NuSmtOamRpYlVWU2ExbE9Wa294Y0VSSmFXZGFNR0k1ZEU5UGJHdGpRMDFwU1dOdVlYZHdNUzFsUlZocFlrcE1ka3R2Wkc1TVV6UnROSE5DVEZGeU1VaDBia3hwZG5SNmRFcEdValZvTTBOTVQwaFlXbWRQYzNkTVoyczNURk5rWjFsaVVHcDRhV1JXWmtaemJ3PT0iLCJlbWFpbCI6ImFndXptYW5AbGFzZWd1bmRhLmNvbS5hciJ9LCJyZWdpc3RyeS5yZWRoYXQuaW8iOnsiYXV0aCI6ImZIVm9ZeTF3YjI5c0xUa3dNbVZqTmprMkxUSTFNVFV0TkdZME55MDRPRGhpTFRrMlltSmpNemhpWVRKbE56cGxlVXBvWWtkamFVOXBTbE5WZWxWNFRXbEtPUzVsZVVwNlpGZEphVTlwU1RGT1YwNW9UV3BWTVUweVZURlpWMUV3V1ZSQk0wOUVaR3hQVjFrMFRWUkJNbGxxWTNkT2FtYzBUbWxLT1M1RVNXRlFWbTVsT1RjNWRXcFFRWEZqZDJ4cVdGcFdhRWxLY1RKYWMxbGhkMHRqYmxKU2VWUlVhM2gxTkdkSFRtdDJWVEpSTnpJemNHcEZaWE15VUZFelZqQjZZMlZuTkhObVoyaEhiVnA1Vm1wa1kwRkpVVVpNY25wYVVrRkRZbUpQWVV4UFJtbDZlVUpyVjJ0ZmJ6UTJjREF6WDJoVVFYTmhiMFpKV1hOaFJtTkVVa2hNUVZReE5tVjBWbFZ4Ums1T2MwRXhRaTFPYVV0MGJWVTVWbVp4YURsUlpUTlBlRTkxVm14dGIxTTBTV28wVm5kbGNtWXliREUzVTNsTE1uWlRhVnBqWWw5TFZFZ3lhMGd0YWtOR1JXMDVaVEo2UlZoVGVUVXpjekprVlU5QlUxWTNObXhXVXpsT1drNXlUV1JyWDFwRWRIWkxSbGxFTm5KR05FaE1ZeTB6TkdsTVJqbHpSa2R3ZEdkUmJqQjRTSFpXVjNKVlJteHVSbFpVTTJKUGQzTmFUMWxEVlhwc1RUQnRjMGRXVm5kSFh6UnBRMFZhVUdZd1IwSlJPRzVJZVZKNVRFcEJWME5vUWt4Sk5VSnRkMGhCTlRsclZtdGFTV28zTlRkSWRHMXNVR2RIVkRKbFdESk1TMEo0TUd3M1NWTm5VVEJ4ZUU1MFpYVTFMWGxzUWpaUmVrSlZTMGRoVEZoZmRuYzBjM2R3Ym1GcExWOTBaRlZSY1RKNE5VTkZRbVpXV1RSTU5tcE5lR296VFdWVmQyaHZTREpIUmpKR1ZVeE1VelpHUm1KTmJGQnBNVEIyU1dNelpVSkRkMWsxZVhVM1pEUmhabGh1ZVRsbmVrcGpla3ROVTNjeFlUTXhjVVZ0V25SeWRIcExkQzFPZG1oTlZFdEpkelV6YUVsd1oycHVhRU0xYTBWRGNYSllaemRCUkc1ZlJsTlVjVTFCTVZNdFNUZDVRemxGZW1sSGVrMDFSMEZmTFU1eGExVmlOa1EyWVd4MWIweElkMVJvY25Ka05qZGliVVZTYTFsT1Zrb3hjRVJKYVdkYU1HSTVkRTlQYkd0alEwMXBTV051WVhkd01TMWxSVmhwWWtwTWRrdHZaRzVNVXpSdE5ITkNURkZ5TVVoMGJreHBkblI2ZEVwR1VqVm9NME5NVDBoWVdtZFBjM2RNWjJzM1RGTmtaMWxpVUdwNGFXUldaa1p6Ync9PSIsImVtYWlsIjoiYWd1em1hbkBsYXNlZ3VuZGEuY29tLmFyIn19fQpzc2hLZXk6IHwtCiAgICAKYWRkaXRpb25hbFRydXN0QnVuZGxlOiB8LQogICAgCmltYWdlQ29udGVudFNvdXJjZXM6Ci0gbWlycm9yczoKICAtIHF1YXkuaW8vb3BlbnNoaWZ0LXJlbGVhc2UtZGV2L29jcC1yZWxlYXNlCiAgc291cmNlOiA0LjE0LjgtbXVsdGk=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ocp03-noprod-ssh-private-key
+  namespace: 'ocp03-noprod'
+stringData:
+  ssh-privatekey: # injected on create
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: "ocp03-noprod-ssh-private-key"
+  namespace: 'ocp03-noprod'
+stringData:
+  username: ocpnoprod@vsphere.local
+  password: deY25Y{8gxvV
+---
+apiVersion: agent.open-cluster-management.io/v1
+kind: KlusterletAddonConfig
+metadata:
+  name: 'ocp03-noprod'
+  namespace: 'ocp03-noprod'
+spec:
+  clusterName: 'ocp03-noprod'
+  clusterNamespace: 'ocp03-noprod'
+  clusterLabels:
+    cloud: vSphere
+    vendor: OpenShift
+  applicationManager:
+    enabled: true
+  policyController:
+    enabled: true
+  searchCollector:
+    enabled: true
+  certPolicyController:
+    enabled: true
+  iamPolicyController:
+    enabled: true
