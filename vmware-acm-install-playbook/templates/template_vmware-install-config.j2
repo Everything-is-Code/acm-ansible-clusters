@@ -1,7 +1,7 @@
 apiVersion: v1
 metadata:
   name: {{ cluster_name }}
-baseDomain: {{ base_dns_domain }}
+baseDomain: {{ base_domain }}
 controlPlane:
   architecture: {{ cluster_architecture }}
   hyperthreading: Enabled
@@ -45,10 +45,11 @@ platform:
     cluster: {{ vsphere_cluster }}
     apiVIP: {{ vpshere_apivip }}
     ingressVIP: {{ vsphere_ingressvip }}
-    network: '{{ vsphere_network }}'
-    diskType: '{{ vsphere_disktype }}'
-    folder: '{{ vsphere_folder }}'
-pullSecret: {{ pull_secret }}
+    network: {{ vsphere_network }}
+    diskType: {{ vsphere_disktype }}
+    folder: {{ vsphere_folder }}
+pullSecret: |-
+    {{ pull_secret }}
 sshKey: |-
     {{ ssh_aditional_key }}
 additionalTrustBundle: |-

@@ -39,7 +39,7 @@ spec:
     sshPrivateKeySecretRef:
       name: {{ cluster_name }}-ssh-private-key
     imageSetRef:
-       #quay.io/openshift-release-dev/ocp-release:4.14.7-multi
+       #quay.io/openshift-release-dev/ocp-release:4.14.12-multi
       name: {{ cluster_image }}
   pullSecretRef:
     name: {{ cluster_name }}-pull-secret
@@ -152,7 +152,8 @@ metadata:
   name: {{ cluster_name }}-pull-secret
   namespace: {{ cluster_name }}
 stringData:
-  .dockerconfigjson: {{ pull_secret }} # injected on create
+  .dockerconfigjson: |-
+    {{ pull_secret }}
 type: kubernetes.io/dockerconfigjson
 ---
 apiVersion: v1
@@ -171,7 +172,11 @@ metadata:
   name: {{ cluster_name }}-ssh-private-key
   namespace: {{ cluster_name }}
 stringData:
-  ssh-privatekey: {{ ssh_private_key }}
+  ssh-privatekey: |
+    {{ private_key }}
+    {{ private_key2 }}
+    {{ private_key3 }}
+    {{ private_key4 }}
 type: Opaque
 ---
 apiVersion: v1
@@ -191,7 +196,7 @@ metadata:
   name: {{ cluster_name }}-vsphere-certs
   namespace: {{ cluster_name }}
 data:
-  .cacert: # injected on create
+  .cacert: {{ vsphere_cacert }}
 ---
 apiVersion: agent.open-cluster-management.io/v1
 kind: KlusterletAddonConfig
